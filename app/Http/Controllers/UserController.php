@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -17,7 +20,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         // Validate the request data
-        $this->validate($request, [
+        $validator = Validator::make($request->all(), [
             'noms' => 'required',
             'matricule' => 'required|unique:users',
             'mail' => 'required|email',
@@ -25,8 +28,20 @@ class UserController extends Controller
             'filiere' => 'required',
         ]);
 
+        if($validator->fails()){
+            return response()->json([
+                "errors" => $validator->errors()->getMessages()
+            ]);
+        }
+
         // Create a new user
-        $user = User::create($request->all());
+        $user = User::create([
+            "noms" => $request->noms,
+            "matricule" => $request->matricule,
+            "mail" => $request->mail,
+            "role" => $request->role,
+            "filiere" => $request->filiere
+        ]);
 
         return response()->json($user, 201);
     }
@@ -34,32 +49,39 @@ class UserController extends Controller
     public function login(Request $request)
     {
         // Validate the request data
-        $this->validate($request, [
+        $validator = Validator::make($request->all(), [
             'noms' => 'required',
             'matricule' => 'required',
         ]);
 
-        // Attempt to authenticate the user
-        $credentials = $request->only('noms', 'matricule');
-
-        if (Auth::attempt($credentials)) {
-            // Authentication successful
-            $user = Auth::user();
-
-            // Generate a token for the user
-            $token = $user->createToken('access_token')->accessToken;
-
-            // Return the token and user role
+        if($validator->fails()){
             return response()->json([
-                'token' => $token,
-                'role' => $user->role,
+                "errors" => $validator->errors()->getMessages()
             ]);
         }
 
-        // Authentication failed
-        throw ValidationException::withMessages([
-            'message' => 'Invalid credentials',
-        ]);
+        // Attempt to authenticate the user
+        $user = User::where("noms",$request->noms)->first();
+
+        if($user == null ){
+            return response()->json([
+                "errors" => "Parametres de connexion invalide"
+            ]);
+        }
+
+        $user->token = Str::random(20);
+        $user->save();
+
+        if($user->matricule == $request->matricule){
+            return response()->json([
+                "role" => $user->role,
+                "token" => $user->token
+            ]);
+        }else{
+            return response()->json([
+                "errors" => "Parametres de connexion invalide"
+            ]);
+        }
     }
 
     public function destroy($id)

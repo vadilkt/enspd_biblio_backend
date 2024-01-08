@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('matricule')->unique();
             $table->string('role')->nullable();
             $table->string('filiere');
+            $table->string("token")->nullable();
             $table->timestamps();
         });
     }
