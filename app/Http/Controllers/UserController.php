@@ -57,7 +57,7 @@ class UserController extends Controller
         if($validator->fails()){
             return response()->json([
                 "errors" => $validator->errors()->getMessages()
-            ]);
+            ],411);
         }
 
         // Attempt to authenticate the user
@@ -65,8 +65,10 @@ class UserController extends Controller
 
         if($user == null ){
             return response()->json([
-                "errors" => "Parametres de connexion invalide"
-            ]);
+                "errors" => [
+                    "error" => "Parametres de connexion invalide"
+                ]
+            ],411);
         }
 
         $user->token = Str::random(20);
@@ -79,8 +81,10 @@ class UserController extends Controller
             ]);
         }else{
             return response()->json([
-                "errors" => "Parametres de connexion invalide"
-            ]);
+                "errors" => [ 
+                    "error" => "Parametres de connexion invalide",
+                ]
+            ],411);
         }
     }
 
